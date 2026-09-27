@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TIC TAC TOE · PINK NEON v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===================== BASE ===================== */
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+:root{
+  --pink:#ff2d95;
+  --pink2:#ff6ec7;
+  --pink3:#ffb8e8;
+  --violet:#b57cff;
+  --stroke:rgba(255,140,220,.22);
+  --muted:rgba(255,255,255,.55);
+  --ok:#3dffa0;
+  --bad:#ff5470;
+  --gold:#ffd166;
+}
+body{
+  font-family:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:#05030a;color:#fff;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+button{font-family:inherit;}
+
+/* ===================== BACKGROUND ===================== */
+.bg{
+  position:fixed;inset:0;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(1200px 800px at 15% 10%, #22021a 0%, transparent 60%),
+    radial-gradient(1000px 700px at 85% 90%, #1a0430 0%, transparent 60%),
+    #05030a;
+}
+.blob{position:absolute;border-radius:50%;filter:blur(110px);opacity:.5;will-change:transform;}
+.b1{width:55vmax;height:55vmax;left:-15vmax;top:-20vmax;background:radial-gradient(circle,#ff2d95,transparent 68%);animation:float1 22s ease-in-out infinite;}
+.b2{width:48vmax;height:48vmax;right:-14vmax;bottom:-16vmax;background:radial-gradient(circle,#8a2be2,transparent 68%);animation:float2 26s ease-in-out infinite;}
+.b3{width:38vmax;height:38vmax;left:45%;top:55%;transform:translate(-50%,-50%);background:radial-gradient(circle,#ff6ec7,transparent 70%);opacity:.3;animation:float3 19s ease-in-out infinite;}
+@keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(12vmax,8vmax) scale(1.15)}}
+@keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-10vmax,-6vmax) scale(1.2)}}
+@keyframes float3{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-40%,-62%) scale(1.25)}}
+
+.grid-lines{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,110,199,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,110,199,.055) 1px, transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(circle at 50% 45%, #000 0%, transparent 78%);
+  mask-image:radial-gradient(circle at 50% 45%, #000 0%, transparent 78%);
+}
+.vignette{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%, transparent 40%, rgba(0,0,0,.68) 100%);}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:90;}
+
+/* ===================== GLASS ===================== */
+.glass{
+  background:linear-gradient(150deg, rgba(255,255,255,.075), rgba(255,255,255,.022));
+  border:1px solid var(--stroke);
+  backdrop-filter:blur(22px) saturate(150%);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);
+  box-shadow:0 24px 70px -24px rgba(255,45,149,.45), inset 0 1px 0 rgba(255,255,255,.16);
+}
+
+/* ===================== SCREENS ===================== */
+.screen{
+  position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .45s ease, visibility .45s ease;
+}
+.screen.active{opacity:1;visibility:visible;pointer-events:auto;}
+#screenIntro{align-items:center;justify-content:center;padding:20px;}
+
+/* ===================== INTRO ===================== */
+.intro{
+  position:relative;width:min(720px,94vw);
+  padding:clamp(26px,5vw,52px) clamp(22px,4vw,48px);
+  border-radius:36px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:15px;
+  animation:popIn .85s cubic-bezier(.2,1.3,.4,1) both;
+  overflow:hidden;
+}
+.intro::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.09) 48%,transparent 62%);
+  background-size:260% 100%;
+  animation:sweep 7s linear infinite;
+}
+@keyframes sweep{0%{background-position:220% 0}100%{background-position:-120% 0}}
+@keyframes popIn{from{opacity:0;transform:translateY(34px) scale(.94)}to{opacity:1;transform:none}}
+
+.tag{
+  font-size:11px;letter-spacing:.34em;font-weight:700;
+  color:var(--pink3);text-transform:uppercase;
+  padding:8px 20px;border-radius:999px;
+  border:1px solid rgba(255,110,199,.4);
+  background:rgba(255,45,149,.1);
+  box-shadow:0 0 30px -8px rgba(255,45,149,.9);
+}
+.logo{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(32px,8vw,86px);
+  letter-spacing:.06em;line-height:1;margin:6px 0 0;
+  display:flex;gap:.06em;justify-content:center;flex-wrap:wrap;
+}
+.logo span{
+  background:linear-gradient(180deg,#ffffff 0%,#ffb8e8 45%,#ff2d95 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 26px rgba(255,45,149,.65));
+}
+.logo span.alt{
+  background:linear-gradient(180deg,#ffffff 0%,#d9bcff 45%,#8a2be2 100%);
+  -webkit-background-clip:text;background-clip:text;
+  filter:drop-shadow(0 0 26px rgba(150,60,255,.65));
+}
+.tagline{color:var(--muted);font-size:clamp(13px,1.6vw,16px);margin:0;letter-spacing:.04em;font-weight:400;}
+.chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px;}
+.chip{
+  padding:9px 20px;border-radius:999px;font-weight:700;font-size:13px;letter-spacing:.08em;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+}
+.tap{
+  font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.4);
+  margin:2px 0 0;animation:blink 1.9s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:.35}50%{opacity:1}}
+
+/* ===================== BUTTONS ===================== */
+.btn-main{
+  position:relative;overflow:hidden;border:none;cursor:pointer;
+  font-family:'Orbitron',sans-serif;font-weight:800;letter-spacing:.16em;
+  font-size:clamp(13px,1.5vw,17px);color:#fff;
+  padding:17px 52px;border-radius:999px;
+  background:linear-gradient(135deg,#ff2d95 0%,#c11d8f 45%,#7a1fd0 100%);
+  box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,
+             0 18px 44px -14px rgba(255,45,149,.95),
+             0 0 70px -12px rgba(255,45,149,.7);
+  transition:transform .18s ease, box-shadow .28s ease, filter .2s;
+}
+.btn-main:hover{transform:translateY(-3px) scale(1.025);
+  box-shadow:0 0 0 1px rgba(255,255,255,.28) inset,
+             0 26px 60px -14px rgba(255,45,149,1),
+             0 0 100px -10px rgba(255,45,149,.9);}
+.btn-main:active{transform:translateY(0) scale(.975);}
+.btn-main::after{
+  content:'';position:absolute;top:0;left:-130%;width:55%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);
+  transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite;
+}
+@keyframes shine{0%{left:-130%}55%{left:140%}100%{left:140%}}
+.btn-main.small{padding:13px 22px;font-size:12px;letter-spacing:.12em;width:100%;}
+.btn-main:disabled{filter:grayscale(.7) brightness(.65);cursor:not-allowed;transform:none;}
+
+.btn-ghost{
+  background:rgba(255,255,255,.03);border:1px solid var(--stroke);color:var(--muted);
+  padding:11px 18px;border-radius:999px;cursor:pointer;font-weight:600;
+  letter-spacing:.06em;font-size:12px;transition:.22s;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-ghost:hover{color:#fff;border-color:rgba(255,110,199,.7);background:rgba(255,45,149,.1);}
+.btn-ghost:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ===================== GAME SCREEN ===================== */
+.topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;margin:14px 14px 0;border-radius:22px;flex-shrink:0;
+}
+.brand{font-family:'Orbitron',sans-serif;font-weight:800;letter-spacing:.14em;font-size:13px;display:flex;align-items:center;gap:9px;white-space:nowrap;}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--pink);box-shadow:0 0 16px var(--pink);animation:pulseDot 1.8s infinite;}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
+
+.bal{
+  margin-left:auto;display:flex;align-items:center;gap:8px;
+  padding:9px 18px;border-radius:999px;
+  background:linear-gradient(135deg,rgba(255,45,149,.2),rgba(140,40,220,.14));
+  border:1px solid rgba(255,110,199,.38);
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:#ffd9f2;
+  box-shadow:0 0 30px -10px rgba(255,45,149,.9), inset 0 0 22px -8px rgba(255,45,149,.8);
+  white-space:nowrap;
+}
+.bal .unit{color:var(--pink2);font-size:12px;}
+.top-actions{display:flex;gap:7px;}
+.icon-btn{
+  width:42px;height:42px;border-radius:14px;cursor:pointer;font-size:16px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;
+  transition:.2s;display:grid;place-items:center;position:relative;
+}
+.icon-btn:hover{background:rgba(255,45,149,.2);border-color:rgba(255,110,199,.6);transform:translateY(-2px);}
+.icon-btn.off{opacity:.42;}
+
+/* Equalizer icon */
+.eq{display:inline-flex;align-items:flex-end;gap:2.5px;height:15px;}
+.eq i{width:3px;height:4px;background:var(--pink);border-radius:2px;transition:.2s;}
+.eq.on i{animation:eqb .55s ease-in-out infinite alternate;}
+.eq.on i:nth-child(1){animation-duration:.5s;}
+.eq.on i:nth-child(2){animation-duration:.72s;animation-delay:.08s;}
+.eq.on i:nth-child(3){animation-duration:.42s;animation-delay:.14s;}
+.eq.on i:nth-child(4){animation-duration:.62s;animation-delay:.04s;}
+@keyframes eqb{from{height:3px}to{height:15px}}
+
+.layout{
+  flex:1;display:grid;grid-template-columns:318px 1fr;gap:16px;
+  padding:16px 14px;min-height:0;
+}
+
+/* ---- PANEL ---- */
+.panel{padding:18px;border-radius:26px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+.panel::-webkit-scrollbar{width:5px;}
+.panel::-webkit-scrollbar-thumb{background:rgba(255,110,199,.4);border-radius:3px;}
+
+.field label{display:block;font-size:10.5px;letter-spacing:.22em;color:var(--muted);margin-bottom:8px;font-weight:700;}
+.seg{display:grid;grid-auto-flow:column;gap:7px;}
+.seg.bet{grid-auto-flow:row;grid-template-columns:1fr 1fr;}
+.seg button{
+  padding:10px 4px;border-radius:12px;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
+  color:var(--muted);font-weight:700;font-size:13px;letter-spacing:.03em;transition:.22s;
+}
+.seg button:hover:not(:disabled){color:#fff;border-color:rgba(255,110,199,.55);background:rgba(255,45,149,.12);}
+.seg button.active{
+  color:#fff;
+  background:linear-gradient(135deg,rgba(255,45,149,.4),rgba(140,40,220,.32));
+  border-color:rgba(255,110,199,.8);
+  box-shadow:0 0 22px -6px rgba(255,45,149,.95), inset 0 0 18px rgba(255,45,149,.22);
+}
+.seg button:disabled{opacity:.45;cursor:not-allowed;}
+
+.stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:7px;
+  padding:11px;border-radius:14px;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.06);
+}
+.stat{text-align:center;}
+.stat .v{font-family:'Orbitron',sans-serif;font-weight:800;font-size:17px;letter-spacing:.02em;}
+.stat .l{font-size:9.5px;letter-spacing:.14em;color:var(--muted);font-weight:700;margin-top:1px;}
+.stat .v.ok{color:var(--ok);}
+.stat .v.bad{color:var(--bad);}
+.stat .v.gold{color:var(--gold);text-shadow:0 0 16px rgba(255,209,102,.8);}
+
+.info{display:flex;flex-direction:column;gap:6px;padding:11px 13px;border-radius:13px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06);}
+.info .row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);letter-spacing:.03em;}
+.info .row b{color:#fff;font-weight:700;}
+.info .row b.ok{color:var(--ok);}
+.info .row b.bad{color:var(--bad);}
+
+.panel-actions{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
+
+/* ---- ARENA ---- */
+.arena{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:0;min-width:0;}
+.hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;}
+.turn{
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:13.5px;letter-spacing:.08em;
+  padding:11px 22px;border-radius:999px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;gap:9px;transition:.3s;
+}
+.turn.you{color:#fff;border-color:rgba(255,110,199,.75);background:rgba(255,45,149,.16);box-shadow:0 0 32px -10px rgba(255,45,149,1);}
+.turn.ai{color:#e2d0ff;border-color:rgba(181,124,255,.6);background:rgba(140,60,255,.14);box-shadow:0 0 32px -10px rgba(150,70,255,.9);}
+.dotx,.doto{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dotx{background:var(--pink);box-shadow:0 0 14px var(--pink);}
+.doto{background:var(--violet);box-shadow:0 0 14px var(--violet);}
+.pot{
+  font-size:12.5px;letter-spacing:.06em;color:var(--muted);font-weight:600;
+  padding:11px 20px;border-radius:999px;
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);
+}
+.mode-badge{
+  font-size:10px;letter-spacing:.2em;font-weight:800;text-transform:uppercase;
+  padding:9px 16px;border-radius:999px;
+  background:linear-gradient(135deg,rgba(255,209,102,.2),rgba(255,45,149,.18));
+  border:1px solid rgba(255,209,102,.5);color:#ffe6a8;
+  box-shadow:0 0 24px -8px rgba(255,209,102,.9);
+}
+
+.board{
+  position:relative;
+  width:min(100%, 62vh, 640px);
+  aspect-ratio:1/1;
+  display:grid;
+  gap:clamp(6px,1.2%,14px);
+  padding:clamp(9px,1.5%,18px);
+  border-radius:28px;
+  background:linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,45,149,.045));
+  border:1px solid rgba(255,140,220,.24);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:0 34px 90px -26px rgba(255,45,149,.55), inset 0 1px 0 rgba(255,255,255,.16);
+  overflow:hidden;
+  transition:box-shadow .4s;
+}
+.board.pvp{
+  border-color:rgba(255,209,102,.3);
+  box-shadow:0 34px 90px -26px rgba(255,209,102,.4), inset 0 1px 0 rgba(255,255,255,.16);
+}
+.board::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.13) 47%,transparent 62%);
+  background-size:250% 100%;
+  animation:sweep 6.5s linear infinite;
+}
+
+/* ---- CELLS ---- */
+.cell{
+  position:relative;border-radius:14%;
+  background:linear-gradient(150deg, rgba(255,255,255,.075), rgba(255,255,255,.02));
+  border:1px solid rgba(255,140,220,.16);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  cursor:pointer;display:grid;place-items:center;
+  transition:background .22s, border-color .22s, box-shadow .28s, transform .18s;
+  animation:cellIn .45s cubic-bezier(.2,1.25,.4,1) backwards;
+  animation-delay:calc(var(--d) * 14ms);
+  padding:0;
+}
+@keyframes cellIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.cell::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.16),transparent 48%);
+  opacity:.7;
+}
+.cell::after{
+  content:'';position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;
+  border:2px solid var(--pink);opacity:0;transition:opacity .3s;
+}
+.cell.hint::after{opacity:1;animation:hintPulse 1.4s ease-in-out infinite;}
+@keyframes hintPulse{
+  0%,100%{opacity:.2;box-shadow:0 0 10px rgba(255,45,149,.4)}
+  50%{opacity:1;box-shadow:0 0 36px rgba(255,45,149,1)}
+}
+.cell:not(.taken):hover{
+  background:linear-gradient(150deg, rgba(255,45,149,.22), rgba(140,40,220,.12));
+  border-color:rgba(255,110,199,.8);
+  box-shadow:0 0 30px rgba(255,45,149,.5), inset 0 0 22px rgba(255,45,149,.16);
+  transform:translateY(-3px);
+}
+.cell.taken{cursor:default;}
+.cell.win{
+  background:linear-gradient(150deg, rgba(255,45,149,.4), rgba(140,40,220,.25));
+  border-color:#ff2d95;
+  box-shadow:0 0 40px rgba(255,45,149,.95), inset 0 0 26px rgba(255,45,149,.5);
+  animation:winPulse .9s ease-in-out infinite;
+}
+@keyframes winPulse{
+  0%,100%{transform:scale(1);box-shadow:0 0 30px rgba(255,45,149,.75), inset 0 0 20px rgba(255,45,149,.4)}
+  50%{transform:scale(1.055);box-shadow:0 0 60px rgba(255,45,149,1), inset 0 0 34px rgba(255,45,149,.7)}
+}
+.cell.o.win{
+  background:linear-gradient(150deg, rgba(140,60,255,.45), rgba(255,45,149,.22));
+  border-color:var(--violet);
+  box-shadow:0 0 40px rgba(150,70,255,.95), inset 0 0 26px rgba(150,70,255,.5);
+  animation:winPulseO .9s ease-in-out infinite;
+}
+@keyframes winPulseO{
+  0%,100%{transform:scale(1);box-shadow:0 0 30px rgba(150,70,255,.75), inset 0 0 20px rgba(150,70,255,.4)}
+  50%{transform:scale(1.055);box-shadow:0 0 60px rgba(150,70,255,1), inset 0 0 34px rgba(150,70,255,.7)}
+}
+
+/* ---- MARKS ---- */
+.mark{width:66%;height:66%;overflow:visible;}
+.mark line,.mark circle{
+  fill:none;stroke-width:11;stroke-linecap:round;
+  filter:drop-shadow(0 0 5px currentColor) drop-shadow(0 0 16px currentColor);
+}
+.mark.x{color:var(--pink);}
+.mark.x line{stroke:currentColor;stroke-dasharray:80;stroke-dashoffset:80;animation:draw .3s ease forwards;}
+.mark.x .l2{animation-delay:.13s;}
+.mark.o{color:var(--violet);}
+.mark.o circle{stroke:currentColor;stroke-dasharray:180;stroke-dashoffset:180;animation:draw .42s ease forwards;}
+@keyframes draw{to{stroke-dashoffset:0;}}
+
+/* ===================== MODAL ===================== */
+.modal{
+  position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;
+  background:rgba(5,3,10,.74);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:0;visibility:hidden;transition:opacity .35s, visibility .35s;
+}
+.modal.show{opacity:1;visibility:visible;}
+.modal-card{
+  width:min(440px,92vw);padding:36px 30px 30px;border-radius:32px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:13px;
+  transform:scale(.82) translateY(30px);opacity:0;
+  transition:transform .5s cubic-bezier(.2,1.4,.4,1), opacity .4s;
+}
+.modal.show .modal-card{transform:none;opacity:1;}
+.modal-icon{font-size:58px;line-height:1;filter:drop-shadow(0 0 30px rgba(255,45,149,.9));animation:bounceIn .7s cubic-bezier(.2,1.6,.4,1) both;}
+@keyframes bounceIn{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.18) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+.modal-card h2{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(22px,4.4vw,34px);letter-spacing:.06em;margin:0;
+  background:linear-gradient(180deg,#fff,#ff9fdc 50%,#ff2d95);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 22px rgba(255,45,149,.8));
+}
+.modal-card p{margin:0;color:var(--muted);font-size:14px;letter-spacing:.04em;}
+.prize{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(24px,4.6vw,38px);letter-spacing:.03em;
+  color:var(--ok);text-shadow:0 0 30px rgba(61,255,160,.85);
+  animation:prizePop .6s .25s cubic-bezier(.2,1.6,.4,1) both;
+}
+.prize.zero{color:#fff;text-shadow:0 0 24px rgba(255,255,255,.6);}
+.prize.gold{color:var(--gold);text-shadow:0 0 30px rgba(255,209,102,.9);}
+@keyframes prizePop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+.modal-actions{display:flex;flex-direction:column;gap:9px;width:100%;margin-top:6px;}
+
+/* ===================== TOAST ===================== */
+.toast{
+  position:fixed;left:50%;bottom:44px;z-index:120;
+  transform:translate(-50%,26px);opacity:0;pointer-events:none;
+  padding:13px 28px;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:.05em;
+  background:linear-gradient(135deg,#ff2d95,#a3187c);
+  box-shadow:0 16px 46px -10px rgba(255,45,149,1);
+  transition:.36s cubic-bezier(.2,1.3,.4,1);
+  white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width:960px){
+  .layout{grid-template-columns:1fr;grid-template-rows:auto 1fr;padding:12px;gap:12px;overflow-y:auto;}
+  .panel{flex-direction:row;flex-wrap:wrap;gap:10px;padding:12px;align-items:flex-end;}
+  .panel .field{flex:1 1 120px;}
+  .panel .info, .panel .stats{display:none;}
+  .panel-actions{flex:1 1 100%;flex-direction:row;margin-top:0;}
+  .panel-actions .btn-main.small{width:auto;flex:2;}
+  .panel-actions .btn-ghost{width:auto;flex:1;}
+  .board{width:min(92vw,58vh);}
+  .brand{font-size:11px;letter-spacing:.1em;}
+  .bal{font-size:13px;padding:8px 13px;}
+  .icon-btn{width:38px;height:38px;}
+  .turn,.pot,.mode-badge{font-size:11.5px;padding:9px 14px;}
+}
+@media (max-width:520px){
+  .brand span.txt{display:none;}
+  .logo{gap:0;}
+  .layout{padding:8px;}
+  .topbar{margin:8px 8px 0;padding:9px 11px;}
+  .pot{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ BACKGROUND ============ -->
+<div class="bg">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="grid-lines"></div>
+  <div class="vignette"></div>
+</div>
+<canvas id="fx"></canvas>
+
+<!-- ============ INTRO ============ -->
+<section class="screen active" id="screenIntro">
+  <div class="intro glass">
+    <div class="tag">✦ Pink Neon Edition · v2 ✦</div>
+    <h1 class="logo"><span>TIC</span><span class="alt">TAC</span><span>TOE</span></h1>
+    <p class="tagline">VS AI hoặc 2 NGƯỜI · Bàn 3×3 · 5×5 · 6×6 · Nhạc nền synthwave</p>
+    <div class="chips">
+      <span class="chip">🤖 VS AI</span>
+      <span class="chip">👥 2 NGƯỜI</span>
+      <span class="chip">🎵 BGM</span>
+    </div>
+    <button class="btn-main" id="btnEnter" style="margin-top:8px;">BẮT ĐẦU</button>
+    <p class="tap">nhấn vào để chơi · bật nhạc</p>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section class="screen" id="screenGame">
+  <header class="topbar glass">
+    <div class="brand"><span class="dot"></span><span class="txt">TIC TAC TOE</span></div>
+    <div class="bal"><span class="unit">₫</span><span id="balText">0</span></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnMusic" title="Nhạc nền">
+        <span class="eq" id="eqIcon"><i></i><i></i><i></i><i></i></span>
+      </button>
+      <button class="icon-btn" id="btnSound" title="Hiệu ứng âm thanh">🔊</button>
+      <button class="icon-btn" id="btnBack" title="Trang chủ">⌂</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel glass">
+      <div class="field">
+        <label>CHẾ ĐỘ</label>
+        <div class="seg" id="modeSeg">
+          <button data-mode="ai" class="active">🤖 VS AI</button>
+          <button data-mode="pvp">👥 2 NGƯỜI</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>KÍCH THƯỚC BÀN</label>
+        <div class="seg" id="sizeSeg">
+          <button data-n="3" class="active">3×3</button>
+          <button data-n="5">5×5</button>
+          <button data-n="6">6×6</button>
+        </div>
+      </div>
+
+      <div class="field" id="betField">
+        <label>MỨC CƯỢC</label>
+        <div class="seg bet" id="betSeg">
+          <button data-bet="50000">50K</button>
+          <button data-bet="100000" class="active">100K</button>
+          <button data-bet="500000">500K</button>
+          <button data-bet="1000000">1M</button>
+        </div>
+      </div>
+
+      <div class="stats" id="statsBox">
+        <div class="stat"><div class="v ok" id="stWin">0</div><div class="l">THẮNG</div></div>
+        <div class="stat"><div class="v bad" id="stLose">0</div><div class="l">THUA</div></div>
+        <div class="stat"><div class="v" id="stDraw">0</div><div class="l">HOÀ</div></div>
+        <div class="stat"><div class="v gold" id="stStreak">0</div><div class="l">CHUỖI</div></div>
+      </div>
+
+      <div class="info" id="ruleBox">
+        <div class="row"><span>Thắng</span><b class="ok">×2 tiền cược</b></div>
+        <div class="row"><span>Hoà</span><b>hoàn cược</b></div>
+        <div class="row"><span>Thua</span><b class="bad">mất cược</b></div>
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn-main small" id="btnPlay">VÀO TRẬN</button>
+        <button class="btn-ghost" id="btnUndo">↩️ HOÀN TÁC</button>
+        <button class="btn-ghost" id="btnHint">💡 GỢI Ý</button>
+        <button class="btn-ghost" id="btnTopup">+ NẠP 1.000.000₫</button>
+      </div>
+    </aside>
+
+    <main class="arena">
+      <div class="hud">
+        <div class="mode-badge" id="modeBadge">🤖 VS AI</div>
+        <div class="turn" id="turnText">Sẵn sàng</div>
+        <div class="pot" id="potText">Cược: 100.000₫</div>
+      </div>
+      <div class="board" id="board"></div>
+    </main>
+  </div>
+</section>
+
+<!-- ============ MODAL ============ -->
+<div class="modal" id="modal">
+  <div class="modal-card glass">
+    <div class="modal-icon" id="modalIcon">🏆</div>
+    <h2 id="modalTitle">CHIẾN THẮNG</h2>
+    <p id="modalSub">Bạn đã đánh bại AI</p>
+    <div class="prize" id="modalPrize">+100.000₫</div>
+    <div class="modal-actions">
+      <button class="btn-main small" id="btnAgain">CHƠI TIẾP</button>
+      <button class="btn-ghost" id="btnMenu">VỀ MENU</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================
+   1. STATE
+   ========================================================== */
+const STORAGE_KEY = 'ttt_pink_balance_v3';
+const STATS_KEY   = 'ttt_pink_stats_v3';
+const DEFAULT_BALANCE = 10000000;
+const K_MAP = { 3: 3, 5: 4, 6: 4 };
+
+const S = {
+  mode: 'ai',            // 'ai' | 'pvp'
+  n: 3, k: 3,
+  board: [], lines: [], history: [],
+  turn: 'X',
+  playing: false, over: true, busy: false,
+  bet: 100000,
+  balance: DEFAULT_BALANCE,
+  stats: { wins: 0, losses: 0, draws: 0, streak: 0, best: 0 },
+  undoUsed: false, hintUsed: false,
+};
+
+const X_SVG = '<svg class="mark x" viewBox="0 0 100 100"><line class="l1" x1="24" y1="24" x2="76" y2="76"/><line class="l2" x1="76" y1="24" x2="24" y2="76"/></svg>';
+const O_SVG = '<svg class="mark o" viewBox="0 0 100 100"><circle cx="50" cy="50" r="27"/></svg>';
+
+const el = {
+  intro: document.getElementById('screenIntro'),
+  game: document.getElementById('screenGame'),
+  board: document.getElementById('board'),
+  turn: document.getElementById('turnText'),
+  pot: document.getElementById('potText'),
+  bal: document.getElementById('balText'),
+  modal: document.getElementById('modal'),
+  modalIcon: document.getElementById('modalIcon'),
+  modalTitle: document.getElementById('modalTitle'),
+  modalSub: document.getElementById('modalSub'),
+  modalPrize: document.getElementById('modalPrize'),
+  btnPlay: document.getElementById('btnPlay'),
+  btnUndo: document.getElementById('btnUndo'),
+  btnHint: document.getElementById('btnHint'),
+  sizeSeg: document.getElementById('sizeSeg'),
+  betSeg: document.getElementById('betSeg'),
+  modeSeg: document.getElementById('modeSeg'),
+  betField: document.getElementById('betField'),
+  ruleBox: document.getElementById('ruleBox'),
+  statsBox: document.getElementById('statsBox'),
+  modeBadge: document.getElementById('modeBadge'),
+  toast: document.getElementById('toast'),
+  fx: document.getElementById('fx'),
+  eqIcon: document.getElementById('eqIcon'),
+  stWin: document.getElementById('stWin'),
+  stLose: document.getElementById('stLose'),
+  stDraw: document.getElementById('stDraw'),
+  stStreak: document.getElementById('stStreak'),
+};
+
+const fmt = n => Math.round(n).toLocaleString('vi-VN');
+const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+
+let toastTimer = null;
+function toast(msg) {
+  el.toast.textContent = msg;
+  el.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.toast.classList.remove('show'), 2100);
+}
+
+/* ==========================================================
+   2. AUDIO ENGINE — BGM synthwave + SFX
+   ========================================================== */
+const BASS_PAT = [
+  [110.00, 110.00, 130.81, 110.00, 164.81, 110.00,  98.00, 110.00], // Am
+  [ 87.31,  87.31, 110.00,  87.31, 130.81,  87.31, 164.81,  87.31], // F
+  [130.81, 130.81, 164.81, 130.81, 196.00, 130.81, 123.47, 130.81], // C
+  [ 98.00,  98.00, 123.47,  98.00, 146.83,  98.00, 174.61,  98.00], // G
+];
+const LEAD_PAT = [
+  [440.00, 523.25, 659.25, 880.00],
+  [349.23, 440.00, 523.25, 698.46],
+  [523.25, 659.25, 783.99, 1046.50],
+  [392.00, 493.88, 587.33, 783.99],
+];
+
+class AudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.master = null;
+    this.musicGain = null;
+    this.sfxGain = null;
+    this.musicOn = true;
+    this.sfxOn = true;
+    this.playing = false;
+    this.step = 0;
+    this.nextNoteTime = 0;
+    this.tempo = 124;
+    this.lookahead = 25;
+    this.scheduleAhead = 0.15;
+    this._timer = null;
+    this._noiseBuf = null;
+  }
+  init() {
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      return;
+    }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.75;
+    this.master.connect(this.ctx.destination);
+
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.gain.value = 0.24;
+    this.musicGain.connect(this.master);
+
+    this.sfxGain = this.ctx.createGain();
+    this.sfxGain.gain.value = 0.6;
+    this.sfxGain.connect(this.master);
+
+    // pre-create noise buffer
+    const len = Math.floor(this.ctx.sampleRate * 0.5);
+    this._noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = this._noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  }
+  /* ---------- DRUMS / SYNTH ---------- */
+  playKick(t) {
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.frequency.setValueAtTime(170, t);
+    o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(1.0, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    o.connect(g); g.connect(this.musicGain);
+    o.start(t); o.stop(t + 0.32);
+  }
+  playSnare(t) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noiseBuf;
+    const g = this.ctx.createGain();
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'highpass'; f.frequency.value = 1400;
+    g.gain.setValueAtTime(0.55, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    src.connect(f); f.connect(g); g.connect(this.musicGain);
+    src.start(t); src.stop(t + 0.2);
+    // body tone
+    const o = this.ctx.createOscillator();
+    const g2 = this.ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(200, t);
+    o.frequency.exponentialRampToValueAtTime(120, t + 0.1);
+    g2.gain.setValueAtTime(0.24, t);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    o.connect(g2); g2.connect(this.musicGain);
+    o.start(t); o.stop(t + 0.14);
+  }
+  playHat(t, accent) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noiseBuf;
+    const g = this.ctx.createGain();
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'highpass'; f.frequency.value = 7500;
+    g.gain.setValueAtTime(accent ? 0.26 : 0.11, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+    src.connect(f); f.connect(g); g.connect(this.musicGain);
+    src.start(t); src.stop(t + 0.05);
+  }
+  playBass(t, freq, dur) {
+    const o = this.ctx.createOscillator();
+    const o2 = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    const f = this.ctx.createBiquadFilter();
+    o.type = 'sawtooth'; o2.type = 'square';
+    o.frequency.value = freq;
+    o2.frequency.value = freq * 0.5;
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(700, t);
+    f.frequency.exponentialRampToValueAtTime(160, t + dur);
+    f.Q.value = 7;
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.3, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(f); o2.connect(f); f.connect(g); g.connect(this.musicGain);
+    o.start(t); o2.start(t);
+    o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  playLead(t, freq, dur) {
+    const o = this.ctx.createOscillator();
+    const o2 = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    const f = this.ctx.createBiquadFilter();
+    o.type = 'square'; o2.type = 'sawtooth';
+    o.frequency.value = freq;
+    o2.frequency.value = freq * 1.006;
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(3200, t);
+    f.frequency.exponentialRampToValueAtTime(900, t + dur);
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.09, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(f); o2.connect(f); f.connect(g); g.connect(this.musicGain);
+    o.start(t); o2.start(t);
+    o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  /* ---------- SCHEDULER ---------- */
+  scheduleStep(step, t) {
+    const pos = step % 16;
+    const bar = Math.floor(step / 16) % 4;
+    if (pos === 0 || pos === 4 || pos === 8 || pos === 12) this.playKick(t);
+    if (pos === 4 || pos === 12) this.playSnare(t);
+    if (pos % 2 === 0) this.playHat(t, pos % 4 === 2);
+    if (pos % 2 === 0) {
+      const f = BASS_PAT[bar][pos / 2];
+      if (f) this.playBass(t, f, 0.22);
+    }
+    const LEAD_POS = [2, 6, 10, 14];
+    const li = LEAD_POS.indexOf(pos);
+    if (li >= 0) {
+      const f = LEAD_PAT[bar][li];
+      if (f) this.playLead(t, f, 0.2);
+    }
+  }
+  scheduler = () => {
+    if (!this.playing) return;
+    const stepDur = 60 / this.tempo / 4;
+    while (this.nextNoteTime < this.ctx.currentTime + this.scheduleAhead) {
+      this.scheduleStep(this.step, this.nextNoteTime);
+      this.nextNoteTime += stepDur;
+      this.step = (this.step + 1) % 64;
+    }
+    this._timer = setTimeout(this.scheduler, this.lookahead);
+  }
+  startMusic() {
+    this.init();
+    if (this.playing) return;
+    this.playing = true;
+    this.step = 0;
+    this.nextNoteTime = this.ctx.currentTime + 0.08;
+    this.scheduler();
+  }
+  stopMusic() {
+    this.playing = false;
+    if (this._timer) clearTimeout(this._timer);
+    this._timer = null;
+  }
+  /* ---------- SFX ---------- */
+  sfx(type) {
+    if (!this.sfxOn) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    if (type === 'click') { this._beep(720, 0.06, 'triangle', 0.05, now); }
+    else if (type === 'x') { this._beep(660, 0.09, 'triangle', 0.05, now); this._beep(990, 0.05, 'sine', 0.03, now + 0.03); }
+    else if (type === 'o') { this._beep(430, 0.1, 'triangle', 0.05, now); this._beep(645, 0.06, 'sine', 0.03, now + 0.03); }
+    else if (type === 'coin') { [880, 1175, 1568].forEach((f, i) => this._beep(f, 0.13, 'square', 0.035, now + i * 0.06)); }
+    else if (type === 'win') { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this._beep(f, 0.26, 'triangle', 0.06, now + i * 0.09)); }
+    else if (type === 'lose') { [330, 262, 196].forEach((f, i) => this._beep(f, 0.28, 'sawtooth', 0.05, now + i * 0.13)); }
+    else if (type === 'draw') { this._beep(523, 0.14, 'sine', 0.05, now); this._beep(392, 0.22, 'sine', 0.05, now + 0.16); }
+    else if (type === 'error') { this._beep(180, 0.18, 'sawtooth', 0.05, now); }
+    else if (type === 'undo') { this._beep(600, 0.07, 'sine', 0.04, now); this._beep(400, 0.09, 'sine', 0.04, now + 0.06); }
+    else if (type === 'hint') { [880, 1320].forEach((f, i) => this._beep(f, 0.1, 'sine', 0.04, now + i * 0.08)); }
+    else if (type === 'start') { [523, 659, 880].forEach((f, i) => this._beep(f, 0.14, 'triangle', 0.05, now + i * 0.07)); }
+    else if (type === 'streak') { [659, 880, 1175, 1568].forEach((f, i) => this._beep(f, 0.16, 'square', 0.045, now + i * 0.08)); }
+  }
+  _beep(freq, dur, type, vol, when) {
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, when);
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(vol, when + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    o.connect(g); g.connect(this.sfxGain);
+    o.start(when); o.stop(when + dur + 0.03);
+  }
+}
+const AE = new AudioEngine();
+
+/* ==========================================================
+   3. FX CANVAS
+   ========================================================== */
+const ctx2d = el.fx.getContext('2d');
+let particles = [];
+let fxRunning = false;
+
+function resizeFx() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  el.fx.width = innerWidth * dpr;
+  el.fx.height = innerHeight * dpr;
+  el.fx.style.width = innerWidth + 'px';
+  el.fx.style.height = innerHeight + 'px';
+  ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeFx();
+addEventListener('resize', resizeFx);
+
+function spawnConfetti(count = 160) {
+  const colors = ['#ff2d95', '#ff6ec7', '#ffb8e8', '#b57cff', '#ffffff', '#ffd166'];
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: innerWidth * 0.5 + (Math.random() - 0.5) * innerWidth * 0.6,
+      y: innerHeight * 0.42 + (Math.random() - 0.5) * 120,
+      vx: (Math.random() - 0.5) * 16,
+      vy: -Math.random() * 18 - 4,
+      g: 0.4,
+      size: 4 + Math.random() * 9,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.34,
+      color: colors[(Math.random() * colors.length) | 0],
+      life: 1,
+      shape: Math.random() < 0.32 ? 'circle' : 'rect',
+      drag: 0.988,
+    });
+  }
+  startFx();
+}
+function startFx() { if (!fxRunning) { fxRunning = true; requestAnimationFrame(fxLoop); } }
+function fxLoop() {
+  ctx2d.clearRect(0, 0, innerWidth, innerHeight);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.vx *= p.drag;
+    p.vy = p.vy * p.drag + p.g;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vr;
+    p.life -= 0.0055;
+    if (p.life <= 0 || p.y > innerHeight + 80) { particles.splice(i, 1); continue; }
+    ctx2d.save();
+    ctx2d.globalAlpha = Math.max(0, Math.min(1, p.life));
+    ctx2d.translate(p.x, p.y);
+    ctx2d.rotate(p.rot);
+    ctx2d.fillStyle = p.color;
+    ctx2d.shadowColor = p.color;
+    ctx2d.shadowBlur = 14;
+    if (p.shape === 'circle') {
+      ctx2d.beginPath();
+      ctx2d.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+      ctx2d.fill();
+    } else {
+      ctx2d.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.62);
+    }
+    ctx2d.restore();
+  }
+  if (particles.length) requestAnimationFrame(fxLoop);
+  else { fxRunning = false; ctx2d.clearRect(0, 0, innerWidth, innerHeight); }
+}
+
+/* ==========================================================
+   4. BOARD LOGIC
+   ========================================================== */
+function buildLines(n, k) {
+  const lines = [];
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c <= n - k; c++) {
+      const l = [];
+      for (let i = 0; i < k; i++) l.push(r * n + c + i);
+      lines.push(l);
+    }
+  for (let c = 0; c < n; c++)
+    for (let r = 0; r <= n - k; r++) {
+      const l = [];
+      for (let i = 0; i < k; i++) l.push((r + i) * n + c);
+      lines.push(l);
+    }
+  for (let r = 0; r <= n - k; r++)
+    for (let c = 0; c <= n - k; c++) {
+      const l = [];
+      for (let i = 0; i < k; i++) l.push((r + i) * n + c + i);
+      lines.push(l);
+    }
+  for (let r = 0; r <= n - k; r++)
+    for (let c = k - 1; c < n; c++) {
+      const l = [];
+      for (let i = 0; i < k; i++) l.push((r + i) * n + c - i);
+      lines.push(l);
+    }
+  return lines;
+}
+function checkWinner(board, lines) {
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const v = board[line[0]];
+    if (!v) continue;
+    let ok = true;
+    for (let i = 1; i < line.length; i++) {
+      if (board[line[i]] !== v) { ok = false; break; }
+    }
+    if (ok) return { winner: v, line };
+  }
+  return null;
+}
+function wouldWin(idx, player) {
+  const b = S.board;
+  if (b[idx]) return false;
+  b[idx] = player;
+  const res = checkWinner(b, S.lines);
+  b[idx] = null;
+  return !!(res && res.winner === player);
+}
+
+/* ==========================================================
+   5. AI — luôn nhường cho người chơi
+   ========================================================== */
+function interference(idx) {
+  let score = 0;
+  for (let li = 0; li < S.lines.length; li++) {
+    const line = S.lines[li];
+    if (line.indexOf(idx) === -1) continue;
+    let x = 0;
+    for (let i = 0; i < line.length; i++) if (S.board[line[i]] === 'X') x++;
+    if (x > 0) score += x * 4 + 2;
+  }
+  return score;
+}
+function aiChoose() {
+  const total = S.n * S.n;
+  const empty = [];
+  for (let i = 0; i < total; i++) if (!S.board[i]) empty.push(i);
+  if (!empty.length) return -1;
+
+  let cands = empty.filter(i => !wouldWin(i, 'O'));
+  if (!cands.length) cands = empty.slice();
+
+  const playerWins = empty.filter(i => wouldWin(i, 'X'));
+  if (playerWins.length) {
+    const safe = cands.filter(i => playerWins.indexOf(i) === -1);
+    if (safe.length) return rand(safe);
+  }
+  const scored = cands.map(i => ({ i, s: interference(i) + Math.random() * 1.6 }));
+  scored.sort((a, b) => a.s - b.s);
+  return scored[0].i;
+}
+
+/* ==========================================================
+   6. RENDER
+   ========================================================== */
+function renderBoard() {
+  el.board.style.gridTemplateColumns = `repeat(${S.n}, 1fr)`;
+  el.board.style.gridTemplateRows = `repeat(${S.n}, 1fr)`;
+  el.board.innerHTML = '';
+  const total = S.n * S.n;
+  for (let i = 0; i < total; i++) {
+    const c = document.createElement('button');
+    c.className = 'cell';
+    c.style.setProperty('--d', i);
+    c.dataset.i = i;
+    c.addEventListener('click', () => onCellClick(i));
+    el.board.appendChild(c);
+  }
+}
+function paintCell(i, mark) {
+  const cell = el.board.children[i];
+  if (!cell) return;
+  cell.classList.add('taken', mark.toLowerCase());
+  cell.innerHTML = mark === 'X' ? X_SVG : O_SVG;
+}
+function clearHints() {
+  for (let i = 0; i < el.board.children.length; i++)
+    el.board.children[i].classList.remove('hint');
+}
+function highlightHints() {
+  clearHints();
+  if (!S.playing || S.over || S.turn !== 'X') return;
+  if (S.mode !== 'ai') return;
+  for (let i = 0; i < S.board.length; i++) {
+    if (!S.board[i] && wouldWin(i, 'X')) {
+      const c = el.board.children[i];
+      if (c) c.classList.add('hint');
+    }
+  }
+}
+function updateHud() {
+  const t = el.turn;
+  if (!S.playing || S.over) {
+    t.className = 'turn';
+    t.innerHTML = 'Sẵn sàng';
+  } else if (S.mode === 'pvp') {
+    if (S.turn === 'X') {
+      t.className = 'turn you';
+      t.innerHTML = '<span class="dotx"></span>LƯỢT X';
+    } else {
+      t.className = 'turn ai';
+      t.innerHTML = '<span class="doto"></span>LƯỢT O';
+    }
+  } else {
+    if (S.turn === 'X') {
+      t.className = 'turn you';
+      t.innerHTML = '<span class="dotx"></span>LƯỢT CỦA BẠN';
+    } else {
+      t.className = 'turn ai';
+      t.innerHTML = '<span class="doto"></span>AI ĐANG SUY NGHĨ...';
+    }
+  }
+  el.pot.textContent = S.mode === 'ai'
+    ? 'Cược: ' + fmt(S.bet) + '₫'
+    : 'Chơi tự do';
+}
+function updateStatsUI() {
+  el.stWin.textContent = S.stats.wins;
+  el.stLose.textContent = S.stats.losses;
+  el.stDraw.textContent = S.stats.draws;
+  el.stStreak.textContent = S.stats.streak;
+}
+
+/* ==========================================================
+   7. BALANCE / STATS
+   ========================================================== */
+function loadBalance() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const v = parseInt(raw, 10);
+  S.balance = Number.isFinite(v) && v >= 0 ? v : DEFAULT_BALANCE;
+}
+function saveBalance() {
+  try { localStorage.setItem(STORAGE_KEY, String(S.balance)); } catch (e) {}
+}
+function loadStats() {
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    if (raw) S.stats = Object.assign(S.stats, JSON.parse(raw));
+  } catch (e) {}
+}
+function saveStats() {
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(S.stats)); } catch (e) {}
+}
+
+let balAnimId = 0;
+function setBalance(newVal, animate = true) {
+  const from = S.balance;
+  S.balance = Math.max(0, Math.round(newVal));
+  saveBalance();
+  const id = ++balAnimId;
+  if (!animate) { el.bal.textContent = fmt(S.balance); return; }
+  const dur = 720;
+  const t0 = performance.now();
+  function step(t) {
+    if (id !== balAnimId) return;
+    const p = Math.min(1, (t - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3);
+    el.bal.textContent = fmt(from + (S.balance - from) * e);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ==========================================================
+   8. GAME FLOW
+   ========================================================== */
+function resetBoardState() {
+  S.board = new Array(S.n * S.n).fill(null);
+  S.lines = buildLines(S.n, S.k);
+  S.turn = 'X';
+  S.over = true;
+  S.playing = false;
+  S.busy = false;
+  S.history = [];
+  S.undoUsed = false;
+  S.hintUsed = false;
+  renderBoard();
+  updateHud();
+  updateActionButtons();
+}
+
+function updateActionButtons() {
+  el.btnUndo.disabled = !S.playing || S.over || S.undoUsed || S.history.length === 0;
+  el.btnHint.disabled = !S.playing || S.over || S.hintUsed;
+}
+
+function setSegmentsEnabled(on) {
+  document.querySelectorAll('#sizeSeg button, #betSeg button, #modeSeg button').forEach(b => {
+    b.disabled = !on;
+  });
+}
+
+function startMatch() {
+  if (S.playing) return;
+
+  if (S.mode === 'ai') {
+    if (S.balance < S.bet) {
+      toast('❌ Không đủ tiền cược!');
+      AE.sfx('error');
+      return;
+    }
+    setBalance(S.balance - S.bet, true);
+    AE.sfx('coin');
+  }
+
+  S.k = K_MAP[S.n];
+  S.board = new Array(S.n * S.n).fill(null);
+  S.lines = buildLines(S.n, S.k);
+  S.turn = 'X';
+  S.over = false;
+  S.busy = false;
+  S.playing = true;
+  S.history = [];
+  S.undoUsed = false;
+  S.hintUsed = false;
+
+  renderBoard();
+  updateHud();
+  updateActionButtons();
+
+  el.btnPlay.disabled = true;
+  el.btnPlay.textContent = 'ĐANG CHƠI...';
+  setSegmentsEnabled(false);
+
+  AE.sfx('start');
+  spawnConfetti(45);
+}
+
+function onCellClick(i) {
+  if (!S.playing || S.over || S.busy) return;
+  if (S.board[i]) return;
+  // Trong chế độ AI, người chơi luôn là X
+  if (S.mode === 'ai' && S.turn !== 'X') return;
+  place(i, S.turn);
+}
+
+function place(i, mark) {
+  S.board[i] = mark;
+  S.history.push(i);
+  paintCell(i, mark);
+  AE.sfx(mark === 'X' ? 'x' : 'o');
+
+  const res = checkWinner(S.board, S.lines);
+  if (res) { endMatch(res.winner, res.line); return; }
+  if (S.board.every(v => v)) { endMatch('draw', null); return; }
+
+  S.turn = mark === 'X' ? 'O' : 'X';
+  updateHud();
+  updateActionButtons();
+  highlightHints();
+
+  if (S.mode === 'ai' && S.turn === 'O') {
+    S.busy = true;
+    clearHints();
+    setTimeout(() => {
+      if (!S.playing || S.over) { S.busy = false; return; }
+      const idx = aiChoose();
+      S.busy = false;
+      if (idx >= 0) place(idx, 'O');
+      else endMatch('draw', null);
+    }, 420 + Math.random() * 320);
+  }
+}
+
+function endMatch(result, line) {
+  S.over = true;
+  S.playing = false;
+  S.busy = false;
+  clearHints();
+  updateHud();
+  updateActionButtons();
+  setSegmentsEnabled(true);
+  el.btnPlay.disabled = false;
+  el.btnPlay.textContent = 'VÀO TRẬN';
+
+  if (line) {
+    line.forEach(i => {
+      const c = el.board.children[i];
+      if (c) c.classList.add('win');
+    });
+  }
+
+  /* -------- PVP MODE -------- */
+  if (S.mode === 'pvp') {
+    if (result === 'X' || result === 'O') {
+      setTimeout(() => {
+        AE.sfx('win');
+        spawnConfetti(180);
+        flashScreen();
+        showModal('pvp-win', result);
+      }, 480);
+    } else {
+      setTimeout(() => {
+        AE.sfx('draw');
+        showModal('draw', 0);
+      }, 480);
+    }
+    return;
+  }
+
+  /* -------- AI MODE -------- */
+  if (result === 'X') {
+    const prize = S.bet * 2;
+    const profit = prize - S.bet;
+    // cập nhật streak
+    S.stats.wins++;
+    S.stats.streak++;
+    if (S.stats.streak > S.stats.best) S.stats.best = S.stats.streak;
+    saveStats();
+    updateStatsUI();
+
+    setTimeout(() => {
+      setBalance(S.balance + prize, true);
+      AE.sfx('win');
+      spawnConfetti(190);
+      flashScreen();
+      showModal('win', profit);
+      // thông báo streak
+      if (S.stats.streak === 2) { toast('🔥 Chuỗi 2 trận thắng!'); setTimeout(() => AE.sfx('streak'), 400); }
+      else if (S.stats.streak === 3) { toast('⚡ Chuỗi 3 trận — Bá đạo!'); setTimeout(() => AE.sfx('streak'), 400); }
+      else if (S.stats.streak === 5) { toast('💎 Chuỗi 5 trận — Bất bại!'); setTimeout(() => AE.sfx('streak'), 400); }
+      else if (S.stats.streak > 5) { toast('👑 Chuỗi ' + S.stats.streak + ' trận!'); }
+    }, 520);
+  } else if (result === 'draw') {
+    S.stats.draws++;
+    S.stats.streak = 0;
+    saveStats();
+    updateStatsUI();
+    setTimeout(() => {
+      setBalance(S.balance + S.bet, true);
+      AE.sfx('draw');
+      showModal('draw', 0);
+    }, 520);
+  } else {
+    // Không bao giờ xảy ra, nhưng vẫn xử lý
+    S.stats.losses++;
+    S.stats.streak = 0;
+    saveStats();
+    updateStatsUI();
+    setTimeout(() => {
+      AE.sfx('lose');
+      showModal('lose', -S.bet);
+    }, 520);
+  }
+}
+
+function flashScreen() {
+  const f = document.createElement('div');
+  f.style.cssText = `position:fixed;inset:0;z-index:85;pointer-events:none;
+    background:radial-gradient(circle at 50% 45%, rgba(255,45,149,.55), transparent 62%);
+    opacity:0;transition:opacity .12s ease;`;
+  document.body.appendChild(f);
+  requestAnimationFrame(() => { f.style.opacity = '1'; });
+  setTimeout(() => { f.style.opacity = '0'; }, 110);
+  setTimeout(() => f.remove(), 700);
+}
+
+/* ==========================================================
+   9. UNDO / HINT
+   ========================================================== */
+function undoMove() {
+  if (!S.playing || S.over || S.busy) { toast('Không thể hoàn tác lúc này'); AE.sfx('error'); return; }
+  if (S.undoUsed) { toast('Đã dùng hoàn tác rồi'); AE.sfx('error'); return; }
+  if (!S.history.length) { toast('Chưa có nước đi nào'); AE.sfx('error'); return; }
+
+  // AI mode: bỏ 2 nước (AI + người). PvP: bỏ 1 nước.
+  const count = (S.mode === 'ai') ? Math.min(2, S.history.length) : 1;
+
+  for (let c = 0; c < count; c++) {
+    const idx = S.history.pop();
+    if (idx === undefined) break;
+    S.board[idx] = null;
+    const cell = el.board.children[idx];
+    if (cell) {
+      cell.classList.remove('taken', 'x', 'o', 'win');
+      cell.innerHTML = '';
+    }
+  }
+  S.turn = (S.history.length % 2 === 0) ? 'X' : 'O';
+  S.undoUsed = true;
+  S.over = false;
+  updateHud();
+  updateActionButtons();
+  highlightHints();
+  AE.sfx('undo');
+  toast('↩️ Đã hoàn tác');
+}
+
+function hintMove() {
+  if (!S.playing || S.over || S.busy) { toast('Không thể gợi ý lúc này'); AE.sfx('error'); return; }
+  if (S.hintUsed) { toast('Đã dùng gợi ý rồi'); AE.sfx('error'); return; }
+  if (S.mode === 'ai' && S.turn !== 'X') { toast('Chờ AI đã'); AE.sfx('error'); return; }
+
+  const player = S.turn;
+  let found = -1;
+  for (let i = 0; i < S.board.length; i++) {
+    if (!S.board[i] && wouldWin(i, player)) { found = i; break; }
+  }
+  if (found === -1) {
+    const empty = [];
+    for (let i = 0; i < S.board.length; i++) if (!S.board[i]) empty.push(i);
+    if (!empty.length) return;
+    found = rand(empty);
+    toast('💡 Không có nước thắng ngay');
+  } else {
+    toast('💡 Nước đi thắng đây!');
+  }
+  S.hintUsed = true;
+  updateActionButtons();
+  AE.sfx('hint');
+  const cell = el.board.children[found];
+  if (cell) {
+    cell.classList.add('hint');
+    setTimeout(() => cell.classList.remove('hint'), 2400);
+  }
+}
+
+/* ==========================================================
+   10. MODAL
+   ========================================================== */
+function showModal(kind, data) {
+  if (kind === 'win') {
+    el.modalIcon.textContent = '🏆';
+    el.modalTitle.textContent = 'CHIẾN THẮNG!';
+    el.modalSub.textContent = 'Bạn đã đánh bại AI';
+    el.modalPrize.className = 'prize';
+    el.modalPrize.textContent = '+' + fmt(data) + '₫';
+  } else if (kind === 'pvp-win') {
+    el.modalIcon.textContent = data === 'X' ? '🎀' : '💜';
+    el.modalTitle.textContent = 'NGƯỜI CHƠI ' + data + ' THẮNG!';
+    el.modalSub.textContent = data === 'X' ? 'Phe hồng đăng quang' : 'Phe tím đăng quang';
+    el.modalPrize.className = 'prize gold';
+    el.modalPrize.textContent = '👑 ' + data;
+  } else if (kind === 'draw') {
+    el.modalIcon.textContent = '🤝';
+    el.modalTitle.textContent = 'HOÀ';
+    el.modalSub.textContent = S.mode === 'ai' ? 'Hoàn lại tiền cược' : 'Không phân thắng bại';
+    el.modalPrize.className = 'prize zero';
+    el.modalPrize.textContent = '±0₫';
+  } else {
+    el.modalIcon.textContent = '💔';
+    el.modalTitle.textContent = 'THUA CUỘC';
+    el.modalSub.textContent = 'Chúc may mắn lần sau';
+    el.modalPrize.className = 'prize zero';
+    el.modalPrize.textContent = fmt(data) + '₫';
+  }
+  el.modal.classList.add('show');
+}
+function hideModal() { el.modal.classList.remove('show'); }
+
+/* ==========================================================
+   11. NAVIGATION
+   ========================================================== */
+function goIntro() {
+  hideModal();
+  el.game.classList.remove('active');
+  el.intro.classList.add('active');
+  S.playing = false;
+  S.over = true;
+  S.busy = false;
+  setSegmentsEnabled(true);
+  el.btnPlay.disabled = false;
+  el.btnPlay.textContent = 'VÀO TRẬN';
+  updateHud();
+}
+function goGame() {
+  el.intro.classList.remove('active');
+  el.game.classList.add('active');
+  resetBoardState();
+  el.btnPlay.disabled = false;
+  el.btnPlay.textContent = 'VÀO TRẬN';
+}
+
+/* ==========================================================
+   12. EVENTS
+   ========================================================== */
+document.getElementById('btnEnter').addEventListener('click', () => {
+  AE.init();
+  AE.sfx('click');
+  if (AE.musicOn) AE.startMusic();
+  setTimeout(() => {
+    spawnConfetti(60);
+    goGame();
+  }, 180);
+});
+
+document.getElementById('btnBack').addEventListener('click', () => {
+  AE.sfx('click');
+  goIntro();
+});
+
+el.btnPlay.addEventListener('click', () => {
+  AE.sfx('click');
+  startMatch();
+});
+
+document.getElementById('btnAgain').addEventListener('click', () => {
+  AE.sfx('click');
+  hideModal();
+  setTimeout(startMatch, 240);
+});
+
+document.getElementById('btnMenu').addEventListener('click', () => {
+  AE.sfx('click');
+  hideModal();
+  setTimeout(goIntro, 200);
+});
+
+document.getElementById('btnTopup').addEventListener('click', () => {
+  setBalance(S.balance + 1000000, true);
+  AE.sfx('coin');
+  toast('💰 Đã nạp 1.000.000₫');
+});
+
+el.btnUndo.addEventListener('click', undoMove);
+el.btnHint.addEventListener('click', hintMove);
+
+/* ---- Music toggle ---- */
+const btnMusic = document.getElementById('btnMusic');
+btnMusic.addEventListener('click', () => {
+  AE.init();
+  AE.musicOn = !AE.musicOn;
+  if (AE.musicOn) {
+    AE.startMusic();
+    el.eqIcon.classList.add('on');
+    btnMusic.classList.remove('off');
+    toast('🎵 Nhạc nền: BẬT');
+  } else {
+    AE.stopMusic();
+    el.eqIcon.classList.remove('on');
+    btnMusic.classList.add('off');
+    toast('🔇 Nhạc nền: TẮT');
+  }
+  AE.sfx('click');
+});
+el.eqIcon.classList.add('on');
+
+/* ---- SFX toggle ---- */
+const btnSound = document.getElementById('btnSound');
+btnSound.addEventListener('click', () => {
+  AE.init();
+  AE.sfxOn = !AE.sfxOn;
+  btnSound.textContent = AE.sfxOn ? '🔊' : '🔇';
+  btnSound.classList.toggle('off', !AE.sfxOn);
+  if (AE.sfxOn) AE.sfx('click');
+});
+
+/* ---- Mode ---- */
+el.modeSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn || btn.disabled) return;
+  [...el.modeSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.mode = btn.dataset.mode;
+  AE.sfx('click');
+
+  const isAI = S.mode === 'ai';
+  el.betField.style.display = isAI ? '' : 'none';
+  el.ruleBox.style.display = isAI ? '' : 'none';
+  el.statsBox.style.display = isAI ? '' : 'none';
+  el.modeBadge.textContent = isAI ? '🤖 VS AI' : '👥 2 NGƯỜI';
+  el.board.classList.toggle('pvp', !isAI);
+  document.getElementById('btnTopup').style.display = isAI ? '' : 'none';
+  resetBoardState();
+});
+
+/* ---- Size ---- */
+el.sizeSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn || btn.disabled) return;
+  [...el.sizeSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.n = parseInt(btn.dataset.n, 10);
+  S.k = K_MAP[S.n];
+  AE.sfx('click');
+  resetBoardState();
+});
+
+/* ---- Bet ---- */
+el.betSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn || btn.disabled) return;
+  [...el.betSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.bet = parseInt(btn.dataset.bet, 10);
+  AE.sfx('click');
+  updateHud();
+});
+
+/* ---- Keyboard ---- */
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (el.modal.classList.contains('show')) hideModal();
+  }
+  // 1-9 di chuyển nhanh trên bàn 3x3
+  if (S.n === 3 && S.playing && !S.over && !S.busy) {
+    const num = parseInt(e.key, 10);
+    if (num >= 1 && num <= 9) {
+      const idx = num - 1;
+      if (!S.board[idx]) onCellClick(idx);
+    }
+  }
+  if (e.key === 'z' || e.key === 'Z') { if (S.playing) undoMove(); }
+  if (e.key === 'h' || e.key === 'H') { if (S.playing) hintMove(); }
+});
+
+/* ==========================================================
+   13. INIT
+   ========================================================== */
+loadBalance();
+loadStats();
+el.bal.textContent = fmt(S.balance);
+updateStatsUI();
+setSegmentsEnabled(true);
+renderBoard();
+updateHud();
+updateActionButtons();
+
+// Intro glow
+setTimeout(() => { spawnConfetti(40); }, 700);
+</script>
+</body>
+</html>
